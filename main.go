@@ -35,82 +35,21 @@ func ApiGetExample(w http.ResponseWriter, r *http.Request) {
 	txn := conn.NewTxn()
 	
 	const q = `
-	{
-		querynode(func: has(id)) {
-		  uid
-		  id
-		  name
-		  data{
-			value
-		  }
-		  class
-		  html
-		  typenode
-		  inputs{
-			input_1{
-			  connections{
-				node
-				input
-				output
-			  }
+		{
+			nodes(func: has(id)) {
+			  uid
+			  id
+			  name
+			  data
+			  class
+			  html
+			  typenode
+			  inputs
+			  outputs
+			  pos_x
+			  pos_y
 			}
-			input_2{
-			  connections{
-				node
-				input
-				output
-			  }
-			}
-			input_3{
-			  connections{
-				node
-				input
-				output
-			  }
-			}
-			input_4{
-			  connections{
-				node
-				input
-				output
-			  }
-			}
-		  }
-		  outputs{
-			output_1{
-			  connections{
-				node
-				input
-				output
-			  }
-			}
-			output_2{
-			  connections{
-				node
-				input
-				output
-			  }
-			}
-			output_3{
-			  connections{
-				node
-				input
-				output
-			  }
-			}
-			output_4{
-			  connections{
-				node
-				input
-				output
-			  }
-			}
-		  }
-		  pos_x
-		  pos_y
-		  
 		}
-	  }
 	`
 
 	resp, err := txn.Query(context.Background(), q)
@@ -131,7 +70,7 @@ func ApiGetExample(w http.ResponseWriter, r *http.Request) {
 func ApiPostExample(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
-
+	
 	var data interface{}
 
     err := json.NewDecoder(r.Body).Decode(&data)
