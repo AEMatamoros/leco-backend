@@ -2,19 +2,15 @@ package main
 
 import (
 	"fmt"
-
 	"encoding/json"
-
     "net/http"
-
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
-	
 	"log"
 	"context"
-
 	"github.com/dgraph-io/dgo/v210"
 	"github.com/dgraph-io/dgo/v210/protos/api"
+	"github.com/go-chi/cors"
 
 )
 
@@ -26,13 +22,28 @@ type Drawflow struct{
 }
 
 func main() {
+	fmt.Println("Servidor levantado en el puerto :3000")
 
     r := chi.NewRouter()
+
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	})
+	r.Use(cors.Handler)
+
     r.Use(middleware.Logger)
     r.Get("/", GetAllDraws)
 	r.Get("/{id}", GetDrawById)
 	r.Post("/", PostDraw)
-    http.ListenAndServe(":3000", r)
+    
+	err := http.ListenAndServe(":3000", r)
+	if err != nil {
+		fmt.Println("ListenAndServe:", err)
+	}
 
 }
 
@@ -55,7 +66,8 @@ func GetAllDraws(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	w.Header().Set("Content-Type", "text/plain")
+	
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp.Json)
 	
 
@@ -80,7 +92,8 @@ func GetDrawById(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	w.Header().Set("Content-Type", "text/plain")
+
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp.Json)
 	
 
@@ -98,9 +111,6 @@ func PostDraw(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-
-	fmt.Println("IN")
-
 	txn := conn.NewTxn()
 
 	pb, err := json.Marshal(drawflow)
@@ -117,12 +127,10 @@ func PostDraw(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(response)
 
-	fmt.Println("drawflow")
-	fmt.Println(drawflow)
-	fmt.Println("pb")
-	fmt.Println(pb)
-	w.Write(response.Json)
+	w.WriteHeader(200)
+	w.Write([]byte("Created"))
 
 }
 
