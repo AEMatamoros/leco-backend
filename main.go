@@ -20,36 +20,32 @@ import (
 
 var conn = newClient()
 
+type Drawflow struct{
+	name string
+	exportedNodes string
+}
+
 func main() {
 
     r := chi.NewRouter()
     r.Use(middleware.Logger)
-    r.Get("/", ApiGetExample)
-	r.Post("/", ApiPostExample)
+    r.Get("/", GetAllDraws)
+	r.Post("/", PostDraw)
     http.ListenAndServe(":3000", r)
 
 }
 
-func ApiGetExample(w http.ResponseWriter, r *http.Request) {
+func GetAllDraws(w http.ResponseWriter, r *http.Request) {
 	
 	txn := conn.NewTxn()
 	
 	const q = `
-		{
-			nodes(func: has(id)) {
-			  uid
-			  id
-			  name
-			  data
-			  class
-			  html
-			  typenode
-			  inputs
-			  outputs
-			  pos_x
-			  pos_y
-			}
+	{
+		drawflow(func: has(name)) {
+		  exportedNodes
+		  name
 		}
+	}
 	`
 
 	resp, err := txn.Query(context.Background(), q)
@@ -57,42 +53,55 @@ func ApiGetExample(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(resp.Json))
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write(resp.Json)
 	
 
-
-	
-
 }
 
-func ApiPostExample(w http.ResponseWriter, r *http.Request) {
+func PostDraw(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	
-	var data interface{}
+	var drawflow interface {}
+    err := json.NewDecoder(r.Body).Decode(&drawflow)
 
-    err := json.NewDecoder(r.Body).Decode(&data)
     if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
-	m := data.(map[string]interface{})
 
-	fmt.Println(m["ok"])
-	fmt.Println(m["ok2"])
-	fmt.Println(m["ok3"])
+	fmt.Println("IN")
 
-	jsonResp, err := json.Marshal(m)
-	w.Write(jsonResp)
+	txn := conn.NewTxn()
+
+	pb, err := json.Marshal(drawflow)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mu := &api.Mutation{
+		SetJson: pb,
+		CommitNow: true,
+	}
+
+	response, err := txn.Mutate(context.Background(), mu)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("drawflow")
+	fmt.Println(drawflow)
+	fmt.Println("pb")
+	fmt.Println(pb)
+	w.Write(response.Json)
 
 }
 
 func newClient() *dgo.Dgraph {
 
-	conn, err := dgo.DialSlashEndpoint("https://blue-surf-590475.us-east-1.aws.cloud.dgraph.io/graphql", "NjlkNWU3ODYxNzY5YTVhYjdhNGZkZWNjOTQ5YmJhNzI=")
+	conn, err := dgo.DialSlashEndpoint("https://blue-surf-590507.us-east-1.aws.cloud.dgraph.io/graphql", "YjU5YmE5NDBmMDIzMzAzYmY1NGQwOTAzZGY0NzI1MGU=")
 	if err != nil {
 	  log.Fatal(err)
 	}
