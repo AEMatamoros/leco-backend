@@ -30,6 +30,7 @@ func main() {
     r := chi.NewRouter()
     r.Use(middleware.Logger)
     r.Get("/", GetAllDraws)
+	r.Get("/{id}", GetDrawById)
 	r.Post("/", PostDraw)
     http.ListenAndServe(":3000", r)
 
@@ -42,6 +43,32 @@ func GetAllDraws(w http.ResponseWriter, r *http.Request) {
 	const q = `
 	{
 		drawflow(func: has(name)) {
+		  uid
+		  exportedNodes
+		  name
+		}
+	}
+	`
+
+	resp, err := txn.Query(context.Background(), q)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write(resp.Json)
+	
+
+}
+
+func GetDrawById(w http.ResponseWriter, r *http.Request) {
+	
+	txn := conn.NewTxn()
+	
+	q := `
+	{
+		drawflow(func: uid(` + chi.URLParam(r, "id") + `)) {
+		  uid
 		  exportedNodes
 		  name
 		}
