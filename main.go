@@ -39,6 +39,7 @@ func main() {
     r.Get("/", GetAllDraws)
 	r.Get("/{id}", GetDrawById)
 	r.Post("/", PostDraw)
+	r.Put("/{id}", UpdateDrawById)
     
 	err := http.ListenAndServe(":3000", r)
 	if err != nil {
@@ -131,6 +132,50 @@ func PostDraw(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	w.Write([]byte("Created"))
+
+}
+
+func UpdateDrawById(w http.ResponseWriter, r *http.Request) {
+	
+	txn := conn.NewTxn()
+	
+	mu := &api.Mutation{
+		CommitNow: true,
+	}
+	req := &api.Request{CommitNow: true}
+	req.Query = `{
+					drawflow(func: uid(` + chi.URLParam(r, "id") + `)) {
+					  v as uid
+					  exportedNodes
+					  name
+					}
+				}`
+
+	var data interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+			
+	body := data.(map[string]interface{})
+
+	m := `
+		uid(v) <name> "`+ body["name"].(string)+`" .
+		uid(v) <exportedNodes> "`+ body["exportedNodes"].(string)+`" .
+	`
+	mu.SetNquads = []byte(m)
+	req.Mutations = []*api.Mutation{mu}
+
+	if _, err := txn.Do(context.Background(), req); err != nil {
+		fmt.Println("Ocurrio un error")
+		log.Fatal(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte("Updated"))
+	
 
 }
 
