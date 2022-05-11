@@ -199,7 +199,6 @@ func ExecuteDrawCode(w http.ResponseWriter, r *http.Request) {
 	reader := strings.NewReader(m)
 	cmd.Stdin = reader
 	output, err := cmd.Output()
-	fmt.Println(string(output))
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(string(output)))
 	
