@@ -11,6 +11,9 @@ import (
 	"github.com/dgraph-io/dgo/v210"
 	"github.com/dgraph-io/dgo/v210/protos/api"
 	"github.com/go-chi/cors"
+	"os/exec"
+
+	"strings"
 
 )
 
@@ -40,6 +43,7 @@ func main() {
 	r.Get("/{id}", GetDrawById)
 	r.Post("/", PostDraw)
 	r.Put("/{id}", UpdateDrawById)
+	r.Post("/execute", ExecuteDrawCode)
     
 	err := http.ListenAndServe(":3000", r)
 	if err != nil {
@@ -102,8 +106,6 @@ func GetDrawById(w http.ResponseWriter, r *http.Request) {
 
 func PostDraw(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "application/json")
-	
 	var drawflow interface {}
     err := json.NewDecoder(r.Body).Decode(&drawflow)
 
@@ -128,8 +130,9 @@ func PostDraw(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(response)
 
+	fmt.Println(response)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte("Created"))
 
@@ -175,6 +178,30 @@ func UpdateDrawById(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte("Updated"))
+	
+
+}
+
+func ExecuteDrawCode(w http.ResponseWriter, r *http.Request) {
+	
+	var data interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+			
+	body := data.(map[string]interface{})
+
+	m := body["code"].(string);
+	cmd := exec.Command("python")
+	reader := strings.NewReader(m)
+	cmd.Stdin = reader
+	output, err := cmd.Output()
+	fmt.Println(string(output))
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(string(output)))
 	
 
 }
