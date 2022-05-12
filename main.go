@@ -44,6 +44,7 @@ func main() {
 	r.Post("/", PostDraw)
 	r.Put("/{id}", UpdateDrawById)
 	r.Post("/execute", ExecuteDrawCode)
+	r.Get("/count", GetNumberOfDraws)
     
 	err := http.ListenAndServe(":3000", r)
 	if err != nil {
@@ -203,6 +204,29 @@ func ExecuteDrawCode(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(string(output)))
 	
 
+}
+
+func GetNumberOfDraws(w http.ResponseWriter, r *http.Request) {
+	
+	txn := conn.NewTxn()
+	
+	const q = `
+	{
+		drawflow(func: has(name)) {
+		  uid
+		}
+	}
+	`
+
+	resp, err := txn.Query(context.Background(), q)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp.Json)
+	
 }
 
 func newClient() *dgo.Dgraph {
