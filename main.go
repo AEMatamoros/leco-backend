@@ -39,7 +39,7 @@ func main() {
 	r.Use(cors.Handler)
 
     r.Use(middleware.Logger)
-    r.Get("/", GetAllDraws)
+    r.Get("/all/{offset}", GetAllDraws)
 	r.Get("/{id}", GetDrawById)
 	r.Post("/", PostDraw)
 	r.Put("/{id}", UpdateDrawById)
@@ -57,16 +57,15 @@ func GetAllDraws(w http.ResponseWriter, r *http.Request) {
 	
 	txn := conn.NewTxn()
 	
-	const q = `
+	q := `
 	{
-		drawflow(func: has(name)) {
+		drawflow(func: has(name), first: 9 , offset:`+ chi.URLParam(r, "offset") + `) {
 		  uid
 		  exportedNodes
 		  name
 		}
 	}
 	`
-
 	resp, err := txn.Query(context.Background(), q)
 
 	if err != nil {
